@@ -5,6 +5,9 @@ on:
     - cron: "0 0 * * *" # 毎日AM9時(JST)に自動実行
   workflow_dispatch:    # 手動実行ボタンも追加
 
+permissions:
+  contents: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
