@@ -1,0 +1,34 @@
+name: Sync Notion to GitHub
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # 毎日AM9時(JST)に自動実行
+  workflow_dispatch:    # 手動実行ボタンも追加
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Export Notion to Markdown
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        run: node export-notion.js
+
+      - name: Commit and Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add notes/
+          git diff --staged --quiet || git commit -m "📝 sync notes from Notion $(date +'%Y-%m-%d')"
+          git push
