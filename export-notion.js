@@ -28,7 +28,7 @@ async function exportNotes() {
 
         // タグを取得
         const tags =
-            page.properties.タグ?.multi_select?.map(t => t.name) || [];
+            page.properties.Note_Tag?.multi_select?.map(t => t.name) || [];
 
         // Markdown に変換
         const mdBlocks = await n2m.pageToMarkdown(page.id);
