@@ -11,7 +11,7 @@ async function uploadToDrive() {
     });
 
     const drive = google.drive({ version: "v3", auth });
-    const folderId = process.env.GOOGLE_FOLDER_ID;
+    const folderId = process.env.GDrive_FOLDER_ID;
     const notesDir = "notes";
 
     const files = fs.readdirSync(notesDir).filter((f) => f.endsWith(".md"));
