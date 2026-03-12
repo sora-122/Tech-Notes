@@ -19,40 +19,49 @@ async function uploadToDrive() {
     for (const file of files) {
         const filePath = path.join(notesDir, file);
 
-        // 既存ファイルを検索
-        const existing = await drive.files.list({
-            q: `name='${file}' and '${folderId}' in parents and trashed=false`,
-            fields: "files(id, name)",
-            supportsAllDrives: true,
-            includeItemsFromAllDrives: true,
-        });
+        try {
+            // 既存ファイルを検索
+            const escapedFile = file.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+            const existing = await drive.files.list({
+                q: `name='${escapedFile}' and '${folderId}' in parents and trashed=false`,
+                fields: "files(id, name)",
+                supportsAllDrives: true,
+                includeItemsFromAllDrives: true,
+            });
 
-        if (existing.data.files.length > 0) {
-            // 上書き更新
-            const fileId = existing.data.files[0].id;
-            await drive.files.update({
-                fileId,
-                supportsAllDrives: true,
-                media: {
-                    mimeType: "text/markdown",
-                    body: fs.createReadStream(filePath),
-                },
-            });
-            console.log(`🔁 updated: ${file}`);
-        } else {
-            // 新規アップロード
-            await drive.files.create({
-                supportsAllDrives: true,
-                requestBody: {
-                    name: file,
-                    parents: [folderId],
-                },
-                media: {
-                    mimeType: "text/markdown",
-                    body: fs.createReadStream(filePath),
-                },
-            });
-            console.log(`✅ uploaded: ${file}`);
+            if (existing.data.files.length > 0) {
+                // 上書き更新
+                const fileId = existing.data.files[0].id;
+                await drive.files.update({
+                    fileId,
+                    supportsAllDrives: true,
+                    media: {
+                        mimeType: "text/markdown",
+                        body: fs.createReadStream(filePath),
+                    },
+                });
+                console.log(`🔁 updated: ${file}`);
+            } else {
+                // 新規アップロード
+                await drive.files.create({
+                    supportsAllDrives: true,
+                    requestBody: {
+                        name: file,
+                        parents: [folderId],
+                    },
+                    media: {
+                        mimeType: "text/markdown",
+                        body: fs.createReadStream(filePath),
+                    },
+                });
+                console.log(`✅ uploaded: ${file}`);
+            }
+        } catch (err) {
+            if (err.code === 403 || err.status === 403) {
+                console.warn(`⚠️ skipped: ${file} (${err.code ?? err.status} ${err.message})`);
+            } else {
+                throw err;
+            }
         }
     }
 }
