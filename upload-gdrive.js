@@ -15,65 +15,93 @@ async function uploadToDrive() {
     const notesDir = "notes";
 
     // フォルダが共有ドライブ内かを確認する
-    // サービスアカウントはマイドライブへのファイル作成が不可（403 storageQuota）のため、
-    // 共有ドライブのフォルダである必要がある
     const folderMeta = await drive.files.get({
         fileId: folderId,
         supportsAllDrives: true,
         fields: "id,driveId",
     });
     const driveId = folderMeta.data.driveId;
-    if (!driveId) {
-        throw new Error(
-            `GDRIVE_FOLDER_ID (${folderId}) はマイドライブのフォルダです。` +
-            `サービスアカウントはマイドライブへのファイル作成ができません。` +
-            `GDRIVE_FOLDER_ID を共有ドライブ内のフォルダに変更してください。`
+    const isMyDrive = !driveId;
+
+    if (isMyDrive) {
+        // マイドライブの場合: サービスアカウントはファイル作成不可（403 storageQuota）
+        // 既存ファイルの更新は可能なため、更新のみ試みて新規作成はスキップする。
+        // 根本的な解決策は共有ドライブへの移行（下記参照）。
+        console.warn(
+            `⚠️  GDRIVE_FOLDER_ID (${folderId}) はマイドライブのフォルダです。\n` +
+            `   サービスアカウントはマイドライブへの新規ファイル作成ができません。\n` +
+            `   【推奨】以下の手順で共有ドライブに移行してください:\n` +
+            `     1. Google Drive で「共有ドライブ」を作成する\n` +
+            `     2. サービスアカウントのメールアドレスを共有ドライブのメンバーとして追加する\n` +
+            `     3. 共有ドライブ内にフォルダを作成し、その ID を GDRIVE_FOLDER_ID に設定する\n` +
+            `   既存ファイルの上書き更新のみ試みます。`
         );
     }
 
     const files = fs.readdirSync(notesDir).filter((f) => f.endsWith(".md"));
+    let hasError = false;
 
     for (const file of files) {
         const filePath = path.join(notesDir, file);
 
-        // 既存ファイルを検索（共有ドライブ内に限定して検索）
-        const escapedFile = file.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-        const existing = await drive.files.list({
-            q: `name='${escapedFile}' and '${folderId}' in parents and trashed=false`,
-            fields: "files(id, name)",
-            supportsAllDrives: true,
-            includeItemsFromAllDrives: true,
-            corpora: "drive",
-            driveId,
-        });
+        try {
+            // 既存ファイルを検索
+            const escapedFile = file.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+            const listParams = {
+                q: `name='${escapedFile}' and '${folderId}' in parents and trashed=false`,
+                fields: "files(id, name)",
+                supportsAllDrives: true,
+                includeItemsFromAllDrives: true,
+            };
+            // 共有ドライブの場合はドライブ内に限定して検索
+            if (!isMyDrive) {
+                listParams.corpora = "drive";
+                listParams.driveId = driveId;
+            }
+            const existing = await drive.files.list(listParams);
 
-        if (existing.data.files.length > 0) {
-            // 上書き更新
-            const fileId = existing.data.files[0].id;
-            await drive.files.update({
-                fileId,
-                supportsAllDrives: true,
-                media: {
-                    mimeType: "text/markdown",
-                    body: fs.createReadStream(filePath),
-                },
-            });
-            console.log(`🔁 updated: ${file}`);
-        } else {
-            // 新規アップロード
-            await drive.files.create({
-                supportsAllDrives: true,
-                requestBody: {
-                    name: file,
-                    parents: [folderId],
-                },
-                media: {
-                    mimeType: "text/markdown",
-                    body: fs.createReadStream(filePath),
-                },
-            });
-            console.log(`✅ uploaded: ${file}`);
+            if (existing.data.files.length > 0) {
+                // 上書き更新（マイドライブ・共有ドライブともに可能）
+                const fileId = existing.data.files[0].id;
+                await drive.files.update({
+                    fileId,
+                    supportsAllDrives: true,
+                    media: {
+                        mimeType: "text/markdown",
+                        body: fs.createReadStream(filePath),
+                    },
+                });
+                console.log(`🔁 updated: ${file}`);
+            } else {
+                // 新規アップロード（マイドライブでは 403 になる場合がある）
+                await drive.files.create({
+                    supportsAllDrives: true,
+                    requestBody: {
+                        name: file,
+                        parents: [folderId],
+                    },
+                    media: {
+                        mimeType: "text/markdown",
+                        body: fs.createReadStream(filePath),
+                    },
+                });
+                console.log(`✅ uploaded: ${file}`);
+            }
+        } catch (err) {
+            if (err.code === 403 || err.status === 403) {
+                console.warn(
+                    `⚠️  skipped: ${file} (Error ${err.code ?? err.status}: ${err.message})\n` +
+                    `   共有ドライブへの移行が必要です。`
+                );
+                hasError = true;
+            } else {
+                throw err;
+            }
         }
+    }
+
+    if (hasError) {
+        process.exit(1);
     }
 }
 
