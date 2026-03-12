@@ -17,7 +17,7 @@ async function uploadToDrive() {
     const files = fs.readdirSync(notesDir).filter((f) => f.endsWith(".md"));
 
     for (const file of files) {
-        const filePath = path.join(notesDir.file);
+        const filePath = path.join(notesDir, file);
 
         // 既存ファイルを検索
         const existing = await drive.files.list({
