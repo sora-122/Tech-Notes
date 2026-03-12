@@ -31,6 +31,7 @@ jobs:
         run: node export-notion.js
 
       - name: Upload to Google Drive
+        continue-on-error: true
         env:
           GOOGLE_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_SERVICE_ACCOUNT }}
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
