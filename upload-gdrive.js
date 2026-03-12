@@ -23,6 +23,8 @@ async function uploadToDrive() {
         const existing = await drive.files.list({
             q: `name='${file}' and '${folderId}' in parents and trashed=false`,
             fields: "files(id, name)",
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true,
         });
 
         if (existing.data.files.length > 0) {
@@ -30,6 +32,7 @@ async function uploadToDrive() {
             const fileId = existing.data.files[0].id;
             await drive.files.update({
                 fileId,
+                supportsAllDrives: true,
                 media: {
                     mimeType: "text/markdown",
                     body: fs.createReadStream(filePath),
@@ -39,6 +42,7 @@ async function uploadToDrive() {
         } else {
             // 新規アップロード
             await drive.files.create({
+                supportsAllDrives: true,
                 requestBody: {
                     name: file,
                     parents: [folderId],
