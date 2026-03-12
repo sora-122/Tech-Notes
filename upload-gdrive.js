@@ -23,7 +23,6 @@ async function uploadToDrive() {
         const existing = await drive.files.list({
             q: `name='${file}' and '${folderId}' in parents and trashed=false`,
             fields: "files(id, name)",
-            corpora: "allDrives",
             supportsAllDrives: true,
             includeItemsFromAllDrives: true,
         });
