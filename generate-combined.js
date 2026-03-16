@@ -40,10 +40,18 @@ function generateCombined() {
 
     fs.writeFileSync(outputFile, combined, "utf-8");
     console.log(`✅ ${files.length} 件のメモを ${outputFile} に統合しました。`);
-    console.log(`   NotebookLM のソースとして以下の URL を登録してください:`);
-    // GITHUB_REPOSITORY は GitHub Actions 実行時に自動設定される (例: owner/repo)
-    const repo = process.env.GITHUB_REPOSITORY || "<owner>/<repo>";
-    console.log(`   https://raw.githubusercontent.com/${repo}/main/${outputFile}`);
+    // GITHUB_REPOSITORY は GitHub Actions 実行時に自動設定される (例: sora-122/Tech-Notes)
+    const repo = process.env.GITHUB_REPOSITORY;
+    if (!repo) {
+        console.warn(`⚠️  GITHUB_REPOSITORY が未設定です。GitHub Actions 外で実行している場合は`);
+        console.warn(`   環境変数 GITHUB_REPOSITORY=<owner>/<repo> を指定してください。`);
+    } else {
+        const url = `https://raw.githubusercontent.com/${repo}/main/${outputFile}`;
+        console.log(`\n📎 NotebookLM 連携 URL (初回のみ登録してください):`);
+        console.log(`   ${url}`);
+        console.log(`   ※ URL は変わりません。GitHub Actions の自動実行により内容が更新されるため、`);
+        console.log(`   ※ 一度登録すれば NotebookLM のソースは自動的に最新化されます。`);
+    }
 }
 
 generateCombined();
