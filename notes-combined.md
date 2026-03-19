@@ -1,6 +1,6 @@
 # Tech Notes — 全メモ統合ファイル
 
-> 生成日時: 2026-03-19 08:40:10 UTC  
+> 生成日時: 2026-03-19 09:09:47 UTC  
 > ファイル数: 6  
 > このファイルは GitHub Actions により自動生成されます。
 
@@ -10,6 +10,7 @@
 
 ---
     title: "MonoBehaviour 実装時の初歩的な注意点"
+    id: "4"
     tags: ["Unity"]
     date: "2026-03-02"
     notion_id: "3178958f-aa24-806f-9e16-c214523aadad"
@@ -95,6 +96,7 @@
 
 ---
     title: "テンプレート"
+    id: "3"
     tags: []
     date: "2026-03-02"
     notion_id: "3178958f-aa24-80e3-a813-d6c4b0bb53cd"
@@ -129,6 +131,7 @@
 
 ---
     title: "ライブ構築アイデア"
+    id: "8"
     tags: ["Unity"]
     date: "2026-03-16"
     notion_id: "3258958f-aa24-8041-936b-c2246fc9055a"
