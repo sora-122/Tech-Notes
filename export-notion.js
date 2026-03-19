@@ -26,6 +26,17 @@ async function exportNotes() {
         const title = titleProp?.title?.[0]?.plain_text || "untitled";
         const safeTitle = title.replace(/[/\\?%*:|"<>]/g, "-");
 
+        // IDを取得（unique_idタイプのプロパティ）
+        const uniqueIdProp =
+            page.properties["ID"] ||
+            Object.values(page.properties).find((p) => p.type === "unique_id");
+        const uniqueIdNumber = uniqueIdProp?.unique_id?.number ?? null;
+        const uniqueIdPrefix = uniqueIdProp?.unique_id?.prefix ?? null;
+        const uniqueId = uniqueIdNumber !== null
+            ? (uniqueIdPrefix ? `${uniqueIdPrefix}-${uniqueIdNumber}` : String(uniqueIdNumber))
+            : null;
+        const uniqueIdValue = uniqueId !== null ? `"${uniqueId}"` : "null";
+
         // タグを取得
         const tags =
             page.properties.Note_Tag?.multi_select?.map(t => t.name) || [];
@@ -37,6 +48,7 @@ async function exportNotes() {
         // フロントマター付きで保存
         const content = `---
     title: "${title}"
+    id: ${uniqueIdValue}
     tags: [${tags.map(t => `"${t}"`).join(", ")}]
     date: "${new Date(page.created_time).toISOString().split("T")[0]}"
     notion_id: "${page.id}"
