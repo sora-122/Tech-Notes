@@ -1,6 +1,6 @@
 # Tech Notes — 全メモ統合ファイル
 
-> 生成日時: 2026-03-23 11:10:49 UTC  
+> 生成日時: 2026-03-23 13:49:51 UTC  
 > ファイル数: 3  
 > このファイルは GitHub Actions により自動生成されます。
 
@@ -32,7 +32,32 @@
 ## 内容
 
 
-（手順・コードなど）
+### <u>MonoBehaviourとは</u>
+
+
+Unity の Script の基底クラスであり、`MonoBehabiour` を継承することで Unity のライフサイクルメソッド ( `Awake()`, `Start()`, `Update()` ) が使用できる。
+
+
+```c#
+public class PlayerController : MonoBehaviour
+{
+		void Awake() { }
+		void Start() { }
+		void Update() { }
+}
+```
+
+
+> ⚠️ `MonoBehaviour` を継承したクラスは `new` でインスタンス化できないため、GameObject にコンポーネントとしてアタッチして使用する。
+
+
+### <u>ライフサイクル</u>
+
+
+<u>`Awake()`</u>
+
+
+GameObject が Scene に読み込まれた瞬間に一度だけ呼ばれるメソッド。
 
 
 ## ハマったポイント
