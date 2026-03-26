@@ -1,6 +1,6 @@
 # Tech Notes — 全メモ統合ファイル
 
-> 生成日時: 2026-03-25 02:03:45 UTC  
+> 生成日時: 2026-03-26 02:09:34 UTC  
 > ファイル数: 4  
 > このファイルは GitHub Actions により自動生成されます。
 
@@ -236,6 +236,95 @@ void FixedUpdate()
 
 
 `OnDisable()`
+
+
+GameObject が**非アクティブ**になる度に呼ばれるメソッド。
+
+
+```c#
+void OnDisable()
+{
+		// OnEnable で登録したイベントの解除
+		EventManager.OnGameStart -= HandleGameStart;
+}
+```
+
+
+`OnDestroy()`
+
+
+GameObject が**破棄**される直前に、一度だけ呼ばれるメソッド。
+
+
+```c#
+// GameObject.Destroy() で破棄された時
+// Scene がアンロードされた時
+void OnDestroy()
+{
+		// 外部リソースの開放・後片付け
+		_texture.Release();
+}
+```
+
+
+`Reset()`
+
+
+エディタ上でコンポーネントをアタッチした瞬間や、インスペクターの「Reset」ボタンを押した時に呼ばれるメソッド。
+エディタ作業を効率化することが可能。
+
+
+```c#
+void Reset()
+{
+		// アタッチした瞬間に自動でコンポーネントを探してセットしてくれる
+		_rigidbody = GetComponent<Rigidbody>();
+}
+```
+
+
+### パフォーマンス上の注意点
+
+
+`Update()` を使いすぎない
+
+
+MonoBehaviour を継承したスクリプトが 100個 あれば、`Update()` も毎フレーム100回呼ばれる。
+**空の** **`Update()`** **でも数千個単位になると無視できない負荷となる場合がある**。
+
+
+```c#
+// NG：使わないライフサイクルを空で残さない
+void Update() { }
+```
+
+
+毎フレーム実行が不要な処理は `Update()` に書かない
+
+
+```c#
+//NG：毎フレームコンポーネントを取得している
+void Update()
+{
+		GetComponent<Rigidbody>().AddForce(Vector3.up);
+}
+
+// OK：Awake() で一度だけ取得してキャッシュする
+private Rigidbody _rigidbody;
+
+void Awake()
+{
+		_rigidbody = GetComponent<Rigidbody>();
+}
+
+void Update()
+{
+		_rigidbody.AddForce(Vector3.up);
+}
+```
+
+
+`Awake()` / `Start()` ：参照取得はキャッシュする
 
 
 ## ハマったポイント
