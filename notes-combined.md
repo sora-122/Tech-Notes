@@ -1,7 +1,7 @@
 # Tech Notes — 全メモ統合ファイル
 
-> 生成日時: 2026-03-30 02:23:31 UTC  
-> ファイル数: 4  
+> 生成日時: 2026-03-30 14:13:05 UTC  
+> ファイル数: 5  
 > このファイルは GitHub Actions により自動生成されます。
 
 ---
@@ -327,6 +327,40 @@ void Update()
 `Awake()` / `Start()` ：参照取得はキャッシュする
 
 
+`GetComponent()` や `FindObjectOfType()` はコストが高い。
+
+
+必要以上に呼び出さないようにキャッシュしておく。
+
+
+```c#
+// NG：Update で毎フレーム取得
+void Update()
+{
+		FindObjectOfType<GameManager>().AddScore(1);
+}
+
+//：Awake() / Start() で一度だけ取得してフィールドに保持
+
+void Awake()
+{
+		_gameManager = FindObjectOfType<GameManager>();
+}
+
+void Update()
+{
+		_gameManager.AddScore(1);
+}
+```
+
+
+> ⚠️ `findobjectoftype()` は全 Scene を走査するため特にコストが高い。  
+> `Awake()` / `Start()` での使用も最小限にとどめ、多用する場合はシングルトンやDIで参照を渡す設計が望ましい。
+
+
+`Update()` ：ガベレージコレクション（GC）を意識する
+
+
 ## ハマったポイント
 
 
@@ -334,6 +368,56 @@ void Update()
 
 
 [https://zenn.dev/kti/articles/7e7e4c8dc702ac](https://zenn.dev/kti/articles/7e7e4c8dc702ac)
+
+---
+
+## コーディングにおける5W1H
+
+---
+    title: "コーディングにおける5W1H"
+    id: "11"
+    tags: []
+    date: "2026-03-30"
+    notion_id: "3338958f-aa24-8003-b250-eed3ab8c0ad1"
+    ---
+
+    
+## 概要
+
+- コードには How（どのように）
+- テストコードには What（何を）
+- コミットログにはWhy（なぜ）
+- コードコメントには Why not（あえてやらなかったこと）
+
+を書こうというお話。
+
+
+## 内容
+
+
+### <u>前提知識：5W1Hとは</u>
+
+
+情報を正確に伝え、漏れなく整理するための6要素。
+簡潔かつ具体的に要点を伝えるフレームワークとして活用されている。
+
+
+5W1Hの構成要素と詳細
+
+- When（いつ）：日時、期間、期限。
+- Where（どこで）：場所、施設、現場、対象となるターゲット。
+- Who（誰が）：担当者、関係者、主語、ターゲット。
+- What（何を）：対象物、目的、議題、業務内容。
+- Why（なぜ）：理由、目的、背景、原因。
+- How（どのように）：手段、方法、手順、進め方。
+
+## ハマったポイント
+
+
+## 参考リンク
+
+
+[https://zenn.dev/never_be_a_pm/articles/69d204df1a8c4a](https://zenn.dev/never_be_a_pm/articles/69d204df1a8c4a)
 
 ---
 

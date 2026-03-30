@@ -317,6 +317,40 @@ void Update()
 `Awake()` / `Start()` ：参照取得はキャッシュする
 
 
+`GetComponent()` や `FindObjectOfType()` はコストが高い。
+
+
+必要以上に呼び出さないようにキャッシュしておく。
+
+
+```c#
+// NG：Update で毎フレーム取得
+void Update()
+{
+		FindObjectOfType<GameManager>().AddScore(1);
+}
+
+//：Awake() / Start() で一度だけ取得してフィールドに保持
+
+void Awake()
+{
+		_gameManager = FindObjectOfType<GameManager>();
+}
+
+void Update()
+{
+		_gameManager.AddScore(1);
+}
+```
+
+
+> ⚠️ `findobjectoftype()` は全 Scene を走査するため特にコストが高い。  
+> `Awake()` / `Start()` での使用も最小限にとどめ、多用する場合はシングルトンやDIで参照を渡す設計が望ましい。
+
+
+`Update()` ：ガベレージコレクション（GC）を意識する
+
+
 ## ハマったポイント
 
 
