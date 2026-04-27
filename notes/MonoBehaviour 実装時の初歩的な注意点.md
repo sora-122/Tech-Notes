@@ -351,7 +351,163 @@ void Update()
 `Update()` ：ガベレージコレクション（GC）を意識する
 
 
-Update() 内での
+`Update()` 内でのメモリ確保はGCの頻度を上げ、フレーム落ちの原因となる。
+
+
+```c#
+// NG: 毎フレーム new している（GCの負荷が上がる）
+void Update()
+{
+		Vector3 newPosition = new Vector3(1f, 0f, 0f);
+		transform.position = newPosition;
+}
+
+// OK: フィールドとして使い回す
+private Vector3 _newPosition = new Vector3(1f, 0f, 0f);
+
+void Update()
+{
+		transform.position = _newPosition;
+}
+```
+
+
+文字列操作も同様に、`Update()` 内での文字列結合はGCを発生させやすい。
+
+
+```c#
+// 
+void Update()
+{
+		_text.text = "Score: " + _score();
+}
+
+// 
+private int _prevScore = -1;
+
+void Update()
+{
+		if (_score != _prevScore)
+		{
+				// SetText はGCアロケーションを抑えられる
+				_text.SetText("Score: {0}", _score); // TextMeshPro 限定
+				_prevScore = _score;
+		}
+}
+```
+
+
+`FixedUpdate()` ：呼び出し回数に注意する
+
+
+FixedUpdate() はフレームレートとは独立して固定間隔で呼ばれるため、フレームレートが低い状況では**1フレームに複数回呼ばれる**ことがある。
+重い処理を書くと物理演算全体が遅延する原因になる。
+
+
+```c#
+// NG: FixedUpdate内で重い処理
+void FixedUpdate()
+{
+		foreach (var enemy in FindObjectOfType<Enemy>()) // 全走査は重い
+		{
+				enemy.UpdateAI();
+		}
+}
+
+// OK: 敵のリストはキャッシュしておく
+private Enemy[] _enemies;
+
+void Awake()
+{
+		_enemies = FindObjectOfType<Enemy>();
+}
+
+void FixedUpdate()
+{
+		foreach (var enemy in _enemies)
+		{
+				enemy.UpdateAI();
+		}
+}
+```
+
+
+`OnEnable()` / `OnDisable()` : イベント解除漏れはメモリリークになる
+
+
+`OnEnable()` で登録したイベントを `OnDisable()` で解除し忘れると、オブジェクトが非アクティブになった後でもイベントハンドラがメモリ上に残り続ける。
+
+
+```c#
+// NG: OnEnable()で登録してOnDisable()で解除していない
+void OnEnable()
+{
+		EventManager.OnGameStart += HandleGameStart;
+}
+
+// OK: 必ずペアで書く
+void OnEnable()
+{
+		EventManager.OnGameStart += HandleGameStart;
+}
+
+void OnDisable()
+{
+		EventManager.OnGameStart -= HandleGameStart;
+}
+```
+
+
+> ⚠️ `OnEnable()` / `OnDisable()` はObject Pool で使い回すオブジェクトに特に起きやすい。  
+> 登録 / 解除 は常にペアで書くことを習慣にする。
+
+
+`OnDestroy()` : ネイティブリソースは明示的に開放する
+
+
+Unity の C# はガベージコレクタがあるが、`RenderTexture` や `ComputeBuffer` などのネイティブリソースは GC の対象外。
+`OnDestroy()` で明示的に開放しないとメモリリークになる。
+**判断の目安**として、`new` で生成した Unity オブジェクトや、GPU や OS のリソースを扱うクラスは「手動開放が必要かもしれない」と疑う習慣をつけると安全。
+
+
+```c#
+private RenderTexture _renderTexture;
+private ComputeBuffer _computeBuffer;
+
+void Awake()
+{
+		_renderTexture = new RenderTexture(256, 256, 16);
+		_computeBuffer = new ComputeBuffer(64, sizeof(float));
+}
+
+// NG: OnDestroy()で開放していない
+
+// OK: 明示的にReleaseする
+void OnDextroy()
+{
+		_renderTexture.Release();
+		_computeBuffer.Release();
+}
+```
+
+
+ネイティブリソースとは
+
+
+C# のガベージコレクタ（ GC ）が**自動で解放できない**メモリやリソースのこと
+
+- 通常の C# オブジェクト（ `int` / `string` / クラスのインスタンスなど ）は GC が使われなくなったタイミングで自動で開放してくれる。
+- 一方ネイティブリソースは C# の管理外（ GPU メモリ / OS のファイルハンドルなど ）に確保されるため、GC の管轄外となる。
+
+**GPU / 描画関連**
+
+
+| **クラス**          | **概要**                                      |
+| ---------------- | ------------------------------------------- |
+| `RenderTexture`  | カメラのレンダリング結果をテクスチャとして保持、ポストエフェクトやミニマップなどで使う |
+| `ComputeBuffer`  | GPU上に確保するバッファ、ComputeShaderでのデータ受け渡しに使う     |
+| `GraphicsBuffer` | `ComputeBuffer` の後継、頂点バッファやインデックスバッファの操作に使う |
+| `Mesh` （動的生成）    | `new Mesh()` で動的生成したメッシュ、GPUにジオメトリデータを転送する  |
 
 
 ## ハマったポイント
